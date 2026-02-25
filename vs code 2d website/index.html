@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirFloat · 3D audio & tech experience</title>
+    <!-- Google Fonts & Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Inter", sans-serif;
+            background: #0a0c10;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Modern glass navbar - dark theme */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(10, 12, 16, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 200;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+        .navbar.hidden {
+            transform: translateY(-100%);
+        }
+        .logo {
+            font-weight: 600;
+            font-size: 1.6rem;
+            letter-spacing: -0.02em;
+            background: linear-gradient(145deg, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            cursor: pointer;
+        }
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+        }
+        .nav-links a {
+            text-decoration: none;
+            color: #e2e8f0;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: #3b82f6; }
+
+        /* Search bar - dark theme */
+        .search-container {
+            position: relative;
+            width: 260px;
+        }
+        .search-container input {
+            width: 100%;
+            padding: 0.6rem 1rem 0.6rem 2.5rem;
+            border-radius: 40px;
+            border: 1px solid #2d3a4a;
+            background: rgba(20, 25, 35, 0.7);
+            backdrop-filter: blur(8px);
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            color: #ffffff;
+        }
+        .search-container input::placeholder {
+            color: #94a3b8;
+        }
+        .search-container input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59,130,246,0.2);
+            width: 300px;
+            background: rgba(30, 35, 45, 0.9);
+        }
+        .search-container i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 0.9rem;
+            pointer-events: none;
+        }
+        .nav-icons {
+            display: flex;
+            gap: 1.8rem;
+            align-items: center;
+        }
+        .nav-icons i {
+            font-size: 1.3rem;
+            color: #e2e8f0;
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
+        }
+        .nav-icons i:hover {
+            color: #3b82f6;
+            transform: scale(1.05);
+        }
+        .cart-icon {
+            position: relative;
+        }
+        .cart-badge {
+            position: absolute;
+            top: -8px;
+            right: -10px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 50px;
+            padding: 0.15rem 0.45rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        /* User profile in navbar */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: rgba(59, 130, 246, 0.2);
+            padding: 0.4rem 1rem 0.4rem 0.8rem;
+            border-radius: 40px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .user-profile:hover {
+            background: rgba(59, 130, 246, 0.3);
+            transform: scale(1.02);
+        }
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .user-name {
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .logout-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .logout-btn:hover {
+            color: #ef4444;
+        }
+
+        /* Buttons - dark theme */
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.9rem 2.4rem;
+            border-radius: 50px;
+            font-weight: 500;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 10px 25px -8px rgba(59,130,246,0.3);
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-3px);
+            box-shadow: 0 20px 30px -10px rgba(59,130,246,0.4);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid #3b82f6;
+            padding: 0.9rem 2.2rem;
+            border-radius: 50px;
+            font-weight: 500;
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .btn-outline:hover {
+            border-color: #3b82f6;
+            background: rgba(59,130,246,0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Hero Sections */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 8rem 3rem 4rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .hero-grid {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            width: 100%;
+        }
+        .hero-text {
+            flex: 1;
+        }
+        .hero-text h1 {
+            font-size: 4rem;
+            font-weight: 600;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            background: linear-gradient(145deg, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-text p {
+            font-size: 1.25rem;
+            color: #94a3b8;
+            margin: 1.8rem 0 2.5rem;
+            max-width: 500px;
+        }
+
+        /* 3D canvas containers */
+        .canvas-wrapper {
+            flex: 1;
+            height: 500px;
+            position: relative;
+            border-radius: 0;
+            overflow: visible;
+            background: transparent;
+            box-shadow: none;
+            isolation: isolate;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #three-canvas-airpods, #three-canvas-macbook {
+            width: 100%;
+            height: 100%;
+            display: block;
+            outline: none;
+        }
+
+        /* Section Transitions */
+        .section-transition {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.8s cubic-bezier(0.2, 0.9, 0.3, 1), transform 0.8s cubic-bezier(0.2, 0.9, 0.3, 1);
+            will-change: opacity, transform;
+        }
+        .section-transition.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Products Section - dark theme */
+        .products {
+            padding: 5rem 3rem;
+            background: #0f1217;
+        }
+        .section-title {
+            font-size: 2.8rem;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+            background: linear-gradient(145deg, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .section-sub {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 4rem;
+            font-size: 1.2rem;
+        }
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 2.5rem;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        .product-card {
+            background: #1a1e26;
+            border-radius: 30px;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+            border: 1px solid #2d3748;
+            box-shadow: 0 10px 25px -15px rgba(0,0,0,0.5);
+            opacity: 0;
+            transform: translateY(30px);
+            animation: cardAppear 0.6s ease forwards;
+        }
+        .product-card:nth-child(1) { animation-delay: 0.1s; }
+        .product-card:nth-child(2) { animation-delay: 0.2s; }
+        .product-card:nth-child(3) { animation-delay: 0.3s; }
+        .product-card:nth-child(4) { animation-delay: 0.4s; }
+        
+        @keyframes cardAppear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .product-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: #3b82f6;
+            box-shadow: 0 30px 40px -20px rgba(59,130,246,0.3);
+        }
+        .product-img {
+            width: 100%;
+            height: 180px;
+            border-radius: 24px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #2d3748;
+            transition: transform 0.3s ease;
+        }
+        .product-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        .product-card:hover .product-img img {
+            transform: scale(1.1);
+        }
+        .product-card h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        .price {
+            font-size: 1.4rem;
+            font-weight: 500;
+            margin: 0.8rem 0 1.2rem;
+            color: #3b82f6;
+        }
+        .btn-card {
+            background: transparent;
+            border: 1px solid #3b82f6;
+            padding: 0.7rem 1.8rem;
+            border-radius: 60px;
+            font-weight: 500;
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-card:hover {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+            transform: scale(1.02);
+        }
+
+        /* Reviews Section - dark theme */
+        .reviews {
+            padding: 5rem 3rem;
+            background: #0a0c10;
+        }
+        .review-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        .review-card {
+            background: #1a1e26;
+            border-radius: 30px;
+            padding: 2rem;
+            border: 1px solid #2d3748;
+            transition: all 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+            opacity: 0;
+            transform: translateX(-20px);
+            animation: reviewAppear 0.6s ease forwards;
+        }
+        .review-card:nth-child(2) { animation-delay: 0.15s; }
+        .review-card:nth-child(3) { animation-delay: 0.3s; }
+        
+        @keyframes reviewAppear {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .review-card:hover {
+            transform: translateY(-8px) scale(1.01);
+            border-color: #3b82f6;
+            box-shadow: 0 20px 30px -15px rgba(59,130,246,0.2);
+        }
+        .review-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+        }
+        .review-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #2d3748;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #ffffff;
+            transition: transform 0.3s ease;
+        }
+        .review-card:hover .review-avatar {
+            transform: scale(1.1);
+            background: #3b82f6;
+        }
+        .stars {
+            color: #fbbf24;
+            margin: 0.8rem 0;
+        }
+        .review-text {
+            color: #94a3b8;
+            line-height: 1.6;
+            transition: color 0.3s ease;
+        }
+        .review-card:hover .review-text {
+            color: #e2e8f0;
+        }
+        .reviewer-name {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        /* Footer */
+        .footer {
+            background: #0f1217;
+            padding: 4rem 3rem 2rem;
+            border-top: 1px solid #2d3748;
+            transition: all 0.5s ease;
+        }
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            max-width: 1300px;
+            margin: 0 auto;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: footerAppear 0.8s ease forwards;
+            animation-delay: 0.2s;
+        }
+        @keyframes footerAppear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .footer-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+        .footer-section h3 {
+            color: #ffffff;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+        .footer-section h3::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 40px;
+            height: 2px;
+            background: #3b82f6;
+            transition: width 0.3s ease;
+        }
+        .footer-section:hover h3::after {
+            width: 60px;
+        }
+        .footer-section a {
+            text-decoration: none;
+            color: #94a3b8;
+            transition: all 0.3s ease;
+            position: relative;
+            width: fit-content;
+        }
+        .footer-section a:hover {
+            color: #3b82f6;
+            transform: translateX(5px);
+        }
+        .social-links {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 0.5rem;
+        }
+        .social-links a {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1a1e26;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            border: 1px solid #2d3748;
+        }
+        .social-links a:hover {
+            background: #3b82f6;
+            color: #ffffff;
+            transform: translateY(-5px) scale(1.1);
+            border-color: #3b82f6;
+        }
+        .newsletter-input {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .newsletter-input input {
+            flex: 1;
+            padding: 0.8rem 1rem;
+            border-radius: 40px;
+            border: 1px solid #2d3748;
+            background: #1a1e26;
+            color: #ffffff;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        .newsletter-input input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59,130,246,0.2);
+        }
+        .newsletter-input button {
+            padding: 0.8rem 1.5rem;
+            border-radius: 40px;
+            border: none;
+            background: #3b82f6;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .newsletter-input button:hover {
+            background: #2563eb;
+            transform: scale(1.05);
+        }
+        .footer-bottom {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #2d3748;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        .footer-bottom a {
+            color: #94a3b8;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        .footer-bottom a:hover {
+            color: #3b82f6;
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            opacity: 1;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+            z-index: 100;
+        }
+        .scroll-indicator.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .scroll-indicator i {
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        /* Progress bar */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            z-index: 1000;
+            transition: width 0.1s ease;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #1a1e26;
+            border-left: 4px solid #3b82f6;
+            border-radius: 10px;
+            padding: 1rem 1.5rem;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .toast.show {
+            transform: translateX(0);
+        }
+        .toast.success {
+            border-left-color: #10b981;
+        }
+        .toast.error {
+            border-left-color: #ef4444;
+        }
+
+        /* Auth Modal - Firebase ready */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(6px);
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+        }
+        .modal-box {
+            background: #1a1e26;
+            max-width: 400px;
+            width: 90%;
+            padding: 2.2rem;
+            border-radius: 40px;
+            box-shadow: 0 40px 60px rgba(0,0,0,0.5);
+            border: 1px solid #2d3748;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay[style*="flex"] .modal-box {
+            transform: scale(1);
+        }
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 0.7rem;
+            font-weight: 600;
+            background: #2d3748;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #94a3b8;
+        }
+        .tab.active {
+            background: #3b82f6;
+            color: white;
+        }
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .auth-form input {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid #2d3748;
+            border-radius: 30px;
+            font-size: 1rem;
+            transition: border 0.2s;
+            background: #0f1217;
+            color: #ffffff;
+        }
+        .auth-form input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .auth-form button {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 40px;
+            border: none;
+            background: #3b82f6;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .auth-form button:hover {
+            background: #2563eb;
+        }
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            background: white !important;
+            color: #1a1e26 !important;
+            margin-top: 0.5rem;
+        }
+        .google-btn:hover {
+            background: #f0f0f0 !important;
+        }
+        .google-btn img {
+            width: 20px;
+            height: 20px;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: #94a3b8;
+            margin: 1rem 0;
+        }
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #2d3748;
+        }
+        .divider span {
+            padding: 0 1rem;
+        }
+        .close-modal {
+            float: right;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #94a3b8;
+            transition: color 0.2s;
+        }
+        .close-modal:hover {
+            color: #ef4444;
+        }
+        .auth-error {
+            color: #ef4444;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        /* Cart Panel - dark theme */
+        .cart-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 360px;
+            height: 100vh;
+            background: #1a1e26;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            padding: 2rem 1.5rem;
+            transition: right 0.3s cubic-bezier(0.2, 0, 0, 1);
+            z-index: 250;
+            border-left: 1px solid #2d3748;
+        }
+        .cart-panel.open {
+            right: 0;
+        }
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.6rem;
+            margin-bottom: 2rem;
+            color: #ffffff;
+        }
+        #closeCart {
+            cursor: pointer;
+            color: #94a3b8;
+            transition: color 0.2s;
+        }
+        #closeCart:hover {
+            color: #ef4444;
+        }
+        .cart-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid #2d3748;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <!-- Scroll progress bar -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast">
+        <span id="toastMessage"></span>
+    </div>
+
+    <!-- Navbar with search -->
+    <header class="navbar" id="navbar">
+        <div class="logo" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+            <i class="fas fa-headphones" style="margin-right: 8px; color: #3b82f6;"></i> airFloat
+        </div>
+        <div class="nav-links">
+            <a href="#home">Home</a>
+            <a href="#airpods">AirPods</a>
+            <a href="#macbook">MacBook</a>
+            <a href="#products">Products</a>
+            <a href="#reviews">Reviews</a>
+        </div>
+        <div class="search-container">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search products...">
+        </div>
+        <div class="nav-icons">
+            <div id="authSection">
+                <i class="fas fa-user" id="loginIcon"></i>
+            </div>
+            <div class="cart-icon" id="cartIcon">
+                <i class="fas fa-shopping-bag"></i>
+                <span class="cart-badge" id="cartCount">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Scroll indicator -->
+    <div class="scroll-indicator" id="scrollIndicator">
+        <span>Scroll to explore</span>
+        <i class="fas fa-chevron-down"></i>
+    </div>
+
+    <!-- Hero Section 1 - AirPods Pro -->
+    <section class="hero" id="airpods">
+        <div class="hero-grid">
+            <div class="hero-text">
+                <h1>sound without boundaries</h1>
+                <p>AirPods Pro — now with adaptive audio and 3D spatial sound that moves with you.</p>
+                <div style="display: flex; gap: 1.2rem;">
+                    <button class="btn-primary">Explore 3D</button>
+                    <button class="btn-outline" id="shopNowBtn1">Shop now</button>
+                </div>
+                <div style="margin-top: 2.5rem; display: flex; gap: 2.5rem; color: #94a3b8;">
+                    <span><i class="fas fa-battery-full"></i> 6h</span>
+                    <span><i class="fas fa-bluetooth"></i> 5.3</span>
+                    <span><i class="fas fa-water"></i> IPX4</span>
+                </div>
+            </div>
+            <div class="canvas-wrapper">
+                <canvas id="three-canvas-airpods"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- Hero Section 2 - MacBook Pro M3 -->
+    <section class="hero" id="macbook">
+        <div class="hero-grid">
+            <div class="hero-text">
+                <h1>power beyond measure</h1>
+                <p>MacBook Pro M3 — 16-inch with Liquid Retina XDR display. The ultimate pro notebook.</p>
+                <div style="display: flex; gap: 1.2rem;">
+                    <button class="btn-primary">Explore 3D</button>
+                    <button class="btn-outline" id="shopNowBtn2">Shop now</button>
+                </div>
+                <div style="margin-top: 2.5rem; display: flex; gap: 2.5rem; color: #94a3b8;">
+                    <span><i class="fas fa-microchip"></i> M3 Pro</span>
+                    <span><i class="fas fa-memory"></i> 18GB</span>
+                    <span><i class="fas fa-battery-three-quarters"></i> 22h</span>
+                </div>
+            </div>
+            <div class="canvas-wrapper">
+                <canvas id="three-canvas-macbook"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products section with real product images -->
+    <section class="products section-transition" id="products">
+        <h2 class="section-title">designed for excellence</h2>
+        <div class="section-sub">choose your edition</div>
+        <div class="product-grid">
+            <div class="product-card">
+                <div class="product-img">
+                    <img src="https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/MQD83?wid=1144&hei=1144&fmt=jpeg&qlt=90&.v=1660803972361" alt="AirPods Pro">
+                </div>
+                <h3>AirPods Pro</h3>
+                <div class="price">$249</div>
+                <button class="btn-card add-to-cart" data-name="AirPods Pro" data-price="249"><i class="fas fa-cart-plus"></i> Add</button>
+            </div>
+            <div class="product-card">
+                <div class="product-img">
+                    <img src="https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/airpods-max-select-silver-202011?wid=1200&hei=630&fmt=jpeg&qlt=95&.v=1604021224000" alt="AirPods Max">
+                </div>
+                <h3>AirPods Max</h3>
+                <div class="price">$549</div>
+                <button class="btn-card add-to-cart" data-name="AirPods Max" data-price="549"><i class="fas fa-cart-plus"></i> Add</button>
+            </div>
+            <div class="product-card">
+                <div class="product-img">
+                    <img src="https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/macbook-pro-14-spacegray-select-202301?wid=904&hei=840&fmt=jpeg&qlt=90&.v=1671304673229" alt="MacBook Pro M3">
+                </div>
+                <h3>MacBook Pro M3</h3>
+                <div class="price">$2,499</div>
+                <button class="btn-card add-to-cart" data-name="MacBook Pro M3" data-price="2499"><i class="fas fa-cart-plus"></i> Add</button>
+            </div>
+            <div class="product-card">
+                <div class="product-img">
+                    <img src="https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/MW103?wid=1144&hei=1144&fmt=jpeg&qlt=90&.v=1649879106264" alt="MagSafe Case">
+                </div>
+                <h3>MagSafe Case</h3>
+                <div class="price">$59</div>
+                <button class="btn-card add-to-cart" data-name="MagSafe Case" data-price="59"><i class="fas fa-cart-plus"></i> Add</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reviews section -->
+    <section class="reviews section-transition" id="reviews">
+        <h2 class="section-title">trusted by listeners</h2>
+        <div class="section-sub">real reviews from real people</div>
+        <div class="review-grid">
+            <div class="review-card">
+                <div class="review-header">
+                    <div class="review-avatar">JD</div>
+                    <div>
+                        <h4 class="reviewer-name">Jessica D.</h4>
+                        <div class="stars">★★★★★</div>
+                    </div>
+                </div>
+                <p class="review-text">"The 3D audio is mind-blowing. Feels like the sound is coming from everywhere. Best purchase this year."</p>
+            </div>
+            <div class="review-card">
+                <div class="review-header">
+                    <div class="review-avatar">MK</div>
+                    <div>
+                        <h4 class="reviewer-name">Marcus K.</h4>
+                        <div class="stars">★★★★★</div>
+                    </div>
+                </div>
+                <p class="review-text">"Incredible noise cancellation and the transparency mode is so natural. Worth every penny."</p>
+            </div>
+            <div class="review-card">
+                <div class="review-header">
+                    <div class="review-avatar">SL</div>
+                    <div>
+                        <h4 class="reviewer-name">Sophie L.</h4>
+                        <div class="stars">★★★★☆</div>
+                    </div>
+                </div>
+                <p class="review-text">"Super comfortable for long listening sessions. Battery life is solid too."</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer section-transition" id="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>airFloat</h3>
+                <p style="color: #94a3b8; line-height: 1.6;">Premium audio and tech experiences with cutting-edge 3D sound and design.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-x-twitter"></i></a>
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>Shop</h3>
+                <a href="#">AirPods Pro</a>
+                <a href="#">AirPods Max</a>
+                <a href="#">MacBook Pro</a>
+                <a href="#">Accessories</a>
+                <a href="#">New Arrivals</a>
+            </div>
+            <div class="footer-section">
+                <h3>Support</h3>
+                <a href="#">Help Center</a>
+                <a href="#">Returns</a>
+                <a href="#">Warranty</a>
+                <a href="#">Contact Us</a>
+                <a href="#">FAQs</a>
+            </div>
+            <div class="footer-section">
+                <h3>Newsletter</h3>
+                <p style="color: #94a3b8; margin-bottom: 1rem;">Subscribe for exclusive offers and updates.</p>
+                <div class="newsletter-input">
+                    <input type="email" placeholder="Your email">
+                    <button><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2025 airFloat. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a> | <a href="#">Cookie Policy</a></p>
+        </div>
+    </footer>
+
+    <!-- Auth Modal with Firebase -->
+    <div class="modal-overlay" id="authModal">
+        <div class="modal-box">
+            <span class="close-modal" id="closeModal">&times;</span>
+            <div class="tabs">
+                <div class="tab active" id="loginTab">Log in</div>
+                <div class="tab" id="signupTab">Sign up</div>
+            </div>
+            
+            <!-- Login Form -->
+            <div class="auth-form" id="loginForm">
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <button id="loginBtn">Log in</button>
+                
+                <div class="divider">
+                    <span>or</span>
+                </div>
+                
+                <button class="google-btn" id="googleLoginBtn">
+                    <img src="https://www.google.com/favicon.ico" alt="Google">
+                    Continue with Google
+                </button>
+                
+                <div class="auth-error" id="loginError"></div>
+            </div>
+            
+            <!-- Signup Form -->
+            <div class="auth-form" id="signupForm" style="display: none;">
+                <input type="text" id="signupName" placeholder="Full name" required>
+                <input type="email" id="signupEmail" placeholder="Email" required>
+                <input type="password" id="signupPassword" placeholder="Password (min. 6 characters)" required>
+                <button id="signupBtn">Sign up</button>
+                
+                <div class="divider">
+                    <span>or</span>
+                </div>
+                
+                <button class="google-btn" id="googleSignupBtn">
+                    <img src="https://www.google.com/favicon.ico" alt="Google">
+                    Sign up with Google
+                </button>
+                
+                <div class="auth-error" id="signupError"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Panel -->
+    <div class="cart-panel" id="cartPanel">
+        <div class="cart-header">
+            <span>Your bag</span>
+            <i class="fas fa-times" id="closeCart"></i>
+        </div>
+        <div id="cartItemsContainer">
+            <div class="cart-item">Your cart is empty</div>
+        </div>
+        <div style="margin-top: 2rem; border-top: 1px solid #2d3748; padding-top:1rem; display: flex; justify-content: space-between;">
+            <span style="color: #ffffff;">Total</span> <span id="cartTotal" style="color: #3b82f6;">$0</span>
+        </div>
+        <button style="width:100%; margin-top:1.5rem; background:#3b82f6; color:white; border:none; padding:1rem; border-radius:40px; cursor:pointer;">Checkout</button>
+    </div>
+
+    <!-- Three.js import & setup -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // ========== FIREBASE CONFIGURATION ==========
+        // Replace with your Firebase config
+      const firebaseConfig = {
+
+  apiKey: "AIzaSyBq2uGkWEy3ofZDmd24wM9_FoKJ7FyJEPA",
+
+  authDomain: "d-website-34c12.firebaseapp.com",
+
+  projectId: "d-website-34c12",
+
+  storageBucket: "d-website-34c12.firebasestorage.app",
+
+  messagingSenderId: "1008133567757",
+
+  appId: "1:1008133567757:web:fe1aebd87287fd2da22c44",
+
+  measurementId: "G-70EWP5069N"
+
+};
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // ========== UI ELEMENTS ==========
+        const authSection = document.getElementById('authSection');
+        const loginIcon = document.getElementById('loginIcon');
+        const authModal = document.getElementById('authModal');
+        const closeModal = document.getElementById('closeModal');
+        const loginTab = document.getElementById('loginTab');
+        const signupTab = document.getElementById('signupTab');
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const googleLoginBtn = document.getElementById('googleLoginBtn');
+        const googleSignupBtn = document.getElementById('googleSignupBtn');
+        const loginError = document.getElementById('loginError');
+        const signupError = document.getElementById('signupError');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+
+        // ========== TOAST FUNCTION ==========
+        function showToast(message, type = 'success') {
+            toastMessage.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // ========== UPDATE AUTH UI ==========
+        function updateAuthUI(user) {
+            if (user) {
+                // User is signed in
+                const displayName = user.displayName || user.email.split('@')[0];
+                const photoURL = user.photoURL;
+                const firstLetter = displayName.charAt(0).toUpperCase();
+                
+                authSection.innerHTML = `
+                    <div class="user-profile" id="userProfile">
+                        ${photoURL ? 
+                            `<img src="${photoURL}" class="user-avatar" style="object-fit: cover;">` : 
+                            `<div class="user-avatar">${firstLetter}</div>`
+                        }
+                        <span class="user-name">${displayName}</span>
+                        <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i></button>
+                    </div>
+                `;
+                
+                document.getElementById('logoutBtn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    auth.signOut();
+                });
+                
+                document.getElementById('userProfile').addEventListener('click', () => {
+                    showToast(`Logged in as ${displayName}`, 'success');
+                });
+            } else {
+                // User is signed out
+                authSection.innerHTML = '<i class="fas fa-user" id="loginIcon"></i>';
+                document.getElementById('loginIcon').addEventListener('click', () => {
+                    authModal.style.display = 'flex';
+                });
+            }
+        }
+
+        // ========== AUTH STATE LISTENER ==========
+        auth.onAuthStateChanged((user) => {
+            updateAuthUI(user);
+            if (user) {
+                showToast(`Welcome ${user.displayName || user.email}!`, 'success');
+            }
+        });
+
+        // ========== MODAL HANDLING ==========
+        loginIcon.addEventListener('click', () => {
+            authModal.style.display = 'flex';
+        });
+
+        closeModal.addEventListener('click', () => {
+            authModal.style.display = 'none';
+            loginError.textContent = '';
+            signupError.textContent = '';
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === authModal) {
+                authModal.style.display = 'none';
+                loginError.textContent = '';
+                signupError.textContent = '';
+            }
+        });
+
+        // Tab switching
+        loginTab.addEventListener('click', () => {
+            loginTab.classList.add('active');
+            signupTab.classList.remove('active');
+            loginForm.style.display = 'flex';
+            signupForm.style.display = 'none';
+            loginError.textContent = '';
+            signupError.textContent = '';
+        });
+
+        signupTab.addEventListener('click', () => {
+            signupTab.classList.add('active');
+            loginTab.classList.remove('active');
+            signupForm.style.display = 'flex';
+            loginForm.style.display = 'none';
+            loginError.textContent = '';
+            signupError.textContent = '';
+        });
+
+        // ========== EMAIL/PASSWORD LOGIN ==========
+        loginBtn.addEventListener('click', async () => {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                loginError.textContent = 'Please fill in all fields';
+                return;
+            }
+            
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                authModal.style.display = 'none';
+                document.getElementById('loginEmail').value = '';
+                document.getElementById('loginPassword').value = '';
+            } catch (error) {
+                loginError.textContent = error.message;
+            }
+        });
+
+        // ========== EMAIL/PASSWORD SIGNUP ==========
+        signupBtn.addEventListener('click', async () => {
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            
+            if (!name || !email || !password) {
+                signupError.textContent = 'Please fill in all fields';
+                return;
+            }
+            
+            if (password.length < 6) {
+                signupError.textContent = 'Password must be at least 6 characters';
+                return;
+            }
+            
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                await userCredential.user.updateProfile({
+                    displayName: name
+                });
+                authModal.style.display = 'none';
+                document.getElementById('signupName').value = '';
+                document.getElementById('signupEmail').value = '';
+                document.getElementById('signupPassword').value = '';
+            } catch (error) {
+                signupError.textContent = error.message;
+            }
+        });
+
+        // ========== GOOGLE AUTH ==========
+        async function handleGoogleAuth() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+                await auth.signInWithPopup(provider);
+                authModal.style.display = 'none';
+            } catch (error) {
+                loginError.textContent = error.message;
+            }
+        }
+
+        googleLoginBtn.addEventListener('click', handleGoogleAuth);
+        googleSignupBtn.addEventListener('click', handleGoogleAuth);
+
+        // ========== THREE.JS 3D SETUP ==========
+        // (Keep all the existing Three.js code from previous version)
+        // ========== AIRPODS SETUP ==========
+        const canvasAirpods = document.getElementById('three-canvas-airpods');
+        const sceneAirpods = new THREE.Scene();
+        sceneAirpods.background = null;
+
+        const cameraAirpods = new THREE.PerspectiveCamera(45, canvasAirpods.clientWidth / canvasAirpods.clientHeight, 0.1, 1000);
+        cameraAirpods.position.set(3.5, 1.3, 5.5);
+        
+        const rendererAirpods = new THREE.WebGLRenderer({ canvas: canvasAirpods, antialias: true, alpha: true });
+        rendererAirpods.setSize(canvasAirpods.clientWidth, canvasAirpods.clientHeight);
+        rendererAirpods.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        rendererAirpods.setClearColor(0x000000, 0);
+        rendererAirpods.toneMapping = THREE.ACESFilmicToneMapping;
+        rendererAirpods.toneMappingExposure = 1.2;
+
+        const controlsAirpods = new OrbitControls(cameraAirpods, rendererAirpods.domElement);
+        controlsAirpods.enableDamping = true;
+        controlsAirpods.dampingFactor = 0.05;
+        controlsAirpods.autoRotate = true;
+        controlsAirpods.autoRotateSpeed = 1.5;
+        controlsAirpods.enableZoom = false;
+        controlsAirpods.enablePan = false;
+        controlsAirpods.maxPolarAngle = Math.PI / 2.2;
+        controlsAirpods.minPolarAngle = 0.2;
+        controlsAirpods.target.set(0, 0.1, 0);
+
+        // Lighting for AirPods
+        const ambientAirpods = new THREE.AmbientLight(0xffffff, 0.6);
+        sceneAirpods.add(ambientAirpods);
+        
+        const keyLightAirpods = new THREE.DirectionalLight(0xfff5e6, 1.5);
+        keyLightAirpods.position.set(2, 3, 4);
+        sceneAirpods.add(keyLightAirpods);
+        
+        const fillLightAirpods = new THREE.DirectionalLight(0xe6f0ff, 1.2);
+        fillLightAirpods.position.set(-3, 2, 3);
+        sceneAirpods.add(fillLightAirpods);
+        
+        const backLightAirpods = new THREE.DirectionalLight(0xffffff, 1.0);
+        backLightAirpods.position.set(0, 2, -5);
+        sceneAirpods.add(backLightAirpods);
+
+        // Load AirPods model
+        const loaderAirpods = new GLTFLoader();
+        loaderAirpods.load(
+            'airpods_pro.glb', 
+            (gltf) => {
+                const model = gltf.scene;
+                model.traverse((node) => {
+                    if (node.isMesh) {
+                        if (node.material) {
+                            if (Array.isArray(node.material)) {
+                                node.material.forEach(m => { 
+                                    m.roughness = 0.15; 
+                                    m.metalness = 0.85;
+                                    m.envMapIntensity = 1.5;
+                                });
+                            } else {
+                                node.material.roughness = 0.15;
+                                node.material.metalness = 0.85;
+                                node.material.envMapIntensity = 1.5;
+                            }
+                        }
+                    }
+                });
+                model.scale.set(0.22, 0.22, 0.22);
+                model.position.y = 0.02;
+                sceneAirpods.add(model);
+            },
+            undefined,
+            (error) => {
+                console.log('AirPods model not found, using fallback');
+                const geometry = new THREE.SphereGeometry(0.6, 32, 32);
+                const material = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.2, metalness: 0.8 });
+                const sphere = new THREE.Mesh(geometry, material);
+                sphere.position.y = 0.3;
+                sceneAirpods.add(sphere);
+            }
+        );
+
+        // ========== MACBOOK SETUP ==========
+        const canvasMacbook = document.getElementById('three-canvas-macbook');
+        const sceneMacbook = new THREE.Scene();
+        sceneMacbook.background = null;
+
+        const cameraMacbook = new THREE.PerspectiveCamera(45, canvasMacbook.clientWidth / canvasMacbook.clientHeight, 0.1, 1000);
+        cameraMacbook.position.set(4.0, 1.6, 6.0);
+        
+        const rendererMacbook = new THREE.WebGLRenderer({ canvas: canvasMacbook, antialias: true, alpha: true });
+        rendererMacbook.setSize(canvasMacbook.clientWidth, canvasMacbook.clientHeight);
+        rendererMacbook.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        rendererMacbook.setClearColor(0x000000, 0);
+        rendererMacbook.toneMapping = THREE.ACESFilmicToneMapping;
+        rendererMacbook.toneMappingExposure = 1.3;
+
+        const controlsMacbook = new OrbitControls(cameraMacbook, rendererMacbook.domElement);
+        controlsMacbook.enableDamping = true;
+        controlsMacbook.dampingFactor = 0.05;
+        controlsMacbook.autoRotate = true;
+        controlsMacbook.autoRotateSpeed = 1.0;
+        controlsMacbook.enableZoom = false;
+        controlsMacbook.enablePan = false;
+        controlsMacbook.maxPolarAngle = Math.PI / 2.5;
+        controlsMacbook.minPolarAngle = 0.3;
+        controlsMacbook.target.set(0, 0.1, 0);
+
+        // Enhanced lighting for MacBook
+        const ambientMacbook = new THREE.AmbientLight(0xffffff, 0.7);
+        sceneMacbook.add(ambientMacbook);
+        
+        const keyLightMacbook = new THREE.DirectionalLight(0xffffff, 1.8);
+        keyLightMacbook.position.set(3, 4, 5);
+        sceneMacbook.add(keyLightMacbook);
+        
+        const fillLightMacbook = new THREE.DirectionalLight(0xffeedd, 1.2);
+        fillLightMacbook.position.set(-4, 2, 4);
+        sceneMacbook.add(fillLightMacbook);
+        
+        const backLightMacbook = new THREE.DirectionalLight(0xffffff, 1.0);
+        backLightMacbook.position.set(0, 3, -6);
+        sceneMacbook.add(backLightMacbook);
+        
+        const topLightMacbook = new THREE.PointLight(0xffffff, 0.8);
+        topLightMacbook.position.set(0, 6, 2);
+        sceneMacbook.add(topLightMacbook);
+        
+        const hemiLightMacbook = new THREE.HemisphereLight(0xffffff, 0x446688, 0.8);
+        sceneMacbook.add(hemiLightMacbook);
+
+        // Load MacBook model
+        const loaderMacbook = new GLTFLoader();
+        loaderMacbook.load(
+            'macbook_pro_m3_16_inch_2024.glb', 
+            (gltf) => {
+                const model = gltf.scene;
+                model.traverse((node) => {
+                    if (node.isMesh) {
+                        if (node.material) {
+                            if (Array.isArray(node.material)) {
+                                node.material.forEach(m => { 
+                                    m.roughness = 0.2; 
+                                    m.metalness = 0.9;
+                                    m.emissive = new THREE.Color(0x000000);
+                                });
+                            } else {
+                                node.material.roughness = 0.2;
+                                node.material.metalness = 0.9;
+                                node.material.emissive = new THREE.Color(0x000000);
+                            }
+                        }
+                    }
+                });
+                model.scale.set(0.18, 0.18, 0.18);
+                model.position.y = 0.01;
+                model.rotation.x = 0.02;
+                model.rotation.y = 0.1;
+                sceneMacbook.add(model);
+            },
+            undefined,
+            (error) => {
+                console.log('MacBook model not found, using fallback');
+                const group = new THREE.Group();
+                const baseGeom = new THREE.BoxGeometry(1.2, 0.08, 0.9);
+                const baseMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3, metalness: 0.8 });
+                const base = new THREE.Mesh(baseGeom, baseMat);
+                base.position.y = 0.04;
+                group.add(base);
+                
+                const screenGeom = new THREE.BoxGeometry(1.15, 0.7, 0.05);
+                const screenMat = new THREE.MeshStandardMaterial({ color: 0x1a1e26, roughness: 0.2, metalness: 0.3 });
+                const screen = new THREE.Mesh(screenGeom, screenMat);
+                screen.position.y = 0.45;
+                screen.position.z = -0.1;
+                group.add(screen);
+                
+                group.scale.set(0.25, 0.25, 0.25);
+                group.position.y = 0.1;
+                sceneMacbook.add(group);
+            }
+        );
+
+        // Animation loops
+        function animateAirpods() {
+            requestAnimationFrame(animateAirpods);
+            controlsAirpods.update();
+            rendererAirpods.render(sceneAirpods, cameraAirpods);
+        }
+        animateAirpods();
+
+        function animateMacbook() {
+            requestAnimationFrame(animateMacbook);
+            controlsMacbook.update();
+            rendererMacbook.render(sceneMacbook, cameraMacbook);
+        }
+        animateMacbook();
+
+        // Resize handlers
+        window.addEventListener('resize', () => {
+            const widthAirpods = document.querySelector('#three-canvas-airpods').parentElement.clientWidth;
+            const heightAirpods = document.querySelector('#three-canvas-airpods').parentElement.clientHeight;
+            rendererAirpods.setSize(widthAirpods, heightAirpods);
+            cameraAirpods.aspect = widthAirpods / heightAirpods;
+            cameraAirpods.updateProjectionMatrix();
+
+            const widthMacbook = document.querySelector('#three-canvas-macbook').parentElement.clientWidth;
+            const heightMacbook = document.querySelector('#three-canvas-macbook').parentElement.clientHeight;
+            rendererMacbook.setSize(widthMacbook, heightMacbook);
+            cameraMacbook.aspect = widthMacbook / heightMacbook;
+            cameraMacbook.updateProjectionMatrix();
+        });
+
+        // ========== CART FUNCTIONALITY ==========
+        const cart = [];
+        const cartCountSpan = document.getElementById('cartCount');
+        const cartItemsDiv = document.getElementById('cartItemsContainer');
+        const cartTotalSpan = document.getElementById('cartTotal');
+        const cartPanel = document.getElementById('cartPanel');
+        const cartIcon = document.getElementById('cartIcon');
+        const closeCart = document.getElementById('closeCart');
+
+        function updateCartUI() {
+            cartCountSpan.textContent = cart.reduce((acc, i) => acc + i.qty, 0);
+            if (cart.length === 0) {
+                cartItemsDiv.innerHTML = '<div class="cart-item">Your cart is empty</div>';
+                cartTotalSpan.textContent = '$0';
+            } else {
+                let html = '';
+                let total = 0;
+                cart.forEach(item => {
+                    total += item.price * item.qty;
+                    html += `<div class="cart-item">${item.name} x${item.qty} $${item.price * item.qty}</div>`;
+                });
+                cartItemsDiv.innerHTML = html;
+                cartTotalSpan.textContent = `$${total}`;
+            }
+        }
+
+        document.querySelectorAll('.add-to-cart').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const name = e.target.closest('button').dataset.name;
+                const price = parseInt(e.target.closest('button').dataset.price);
+                const existing = cart.find(i => i.name === name);
+                if (existing) existing.qty++;
+                else cart.push({ name, price, qty: 1 });
+                updateCartUI();
+                cartPanel.classList.add('open');
+                showToast(`${name} added to cart!`, 'success');
+            });
+        });
+
+        cartIcon.addEventListener('click', () => cartPanel.classList.toggle('open'));
+        closeCart.addEventListener('click', () => cartPanel.classList.remove('open'));
+
+        // ========== SCROLL ANIMATIONS ==========
+        const navbar = document.getElementById('navbar');
+        const scrollIndicator = document.getElementById('scrollIndicator');
+        const sections = document.querySelectorAll('.section-transition');
+        const scrollProgress = document.getElementById('scrollProgress');
+        const shopNowBtn1 = document.getElementById('shopNowBtn1');
+        const shopNowBtn2 = document.getElementById('shopNowBtn2');
+
+        shopNowBtn1.addEventListener('click', () => {
+            document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
+        });
+        shopNowBtn2.addEventListener('click', () => {
+            document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
+        });
+
+        let lastScrollTop = 0;
+        let ticking = false;
+
+        function handleScroll() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const windowHeight = window.innerHeight;
+            const documentHeight = document.documentElement.scrollHeight;
+
+            const scrollPercent = (scrollTop / (documentHeight - windowHeight)) * 100;
+            scrollProgress.style.width = scrollPercent + '%';
+
+            if (scrollTop > lastScrollTop && scrollTop > 100) {
+                navbar.classList.add('hidden');
+            } else {
+                navbar.classList.remove('hidden');
+            }
+
+            if (scrollTop > 100) {
+                scrollIndicator.classList.add('hidden');
+            } else {
+                scrollIndicator.classList.remove('hidden');
+            }
+
+            sections.forEach(section => {
+                const sectionTop = section.getBoundingClientRect().top;
+                const sectionBottom = section.getBoundingClientRect().bottom;
+                
+                if (sectionTop < windowHeight * 0.75 && sectionBottom > 0) {
+                    section.classList.add('visible');
+                }
+            });
+
+            lastScrollTop = scrollTop;
+            ticking = false;
+        }
+
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(handleScroll);
+                ticking = true;
+            }
+        });
+
+        setTimeout(handleScroll, 100);
+    </script>
+</body>
+</html>
